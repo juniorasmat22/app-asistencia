@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">AppAsistenciaAiapaec</string>
+    <string name="warning_icon">Campos Obligatorios</string>
+    <string name="titulo">Registro de Asistencia</string>
+    <string name="titulo_advertencia">Por favor complete los campos obligatorios</string>
+    <string name="texto_boton_escaneo">Escanear Qr</string>
+    <string name="texto_boton_registro">Registrar Asistencia</string>
+</resources>

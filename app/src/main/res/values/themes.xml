@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Modifica el tema para que derive de Theme.AppCompat -->
+    <style name="Theme.AppAsistenciaAiapaec" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Aquí puedes agregar personalizaciones de colores, fuentes, etc. -->
+
+        <!-- Puedes agregar más configuraciones aquí -->
+    </style>
+
+</resources>
