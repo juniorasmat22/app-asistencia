@@ -47,6 +47,7 @@ class MainActivity: AppCompatActivity() {
     private var id_sede:Int=0
     private var id_turno:Int=0
     private var estado:String=""
+    private var observacion:String?=null
     private var id_trabajador:Int=0
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
@@ -317,6 +318,9 @@ class MainActivity: AppCompatActivity() {
         val editTextRemarks = findViewById<EditText>(R.id.edit_remarks)
         // Obtener el texto que el usuario ha ingresado en el EditText
         val remarksText = editTextRemarks.text.toString()
+        if (remarksText.isNotEmpty()){
+            observacion=remarksText
+        }
         // Mostrar un mensaje al usuario
         //Toast.makeText(this, "Asistencia registrada: $fechaAsistencia $horaAsistencia", Toast.LENGTH_SHORT).show()
         val asistencia = Asistencia(
@@ -326,33 +330,52 @@ class MainActivity: AppCompatActivity() {
             id_turno= id_turno,
              id_sede= id_sede,
              tipo= estado,
-             observacion= remarksText
+             observacion= observacion
         )
         // Llamar al método de registrar asistencia del ViewModel
        viewModelAsistencia.registrarAsistencia(asistencia)
         setupAsistencia()
         // Log para verificar
-        Log.d("Asistencia AIAPAEC", asistencia.toString())
+        Log.d("msg_AIAPAEC", asistencia.toString())
         //Log.d("Asistencia Data", "trabajador: $id_trabajador, sede: $id_sede, turno: $id_turno, estado: $estado,observacio,$remarksText")
 
 
     }
+    private fun resetFields() {
+        // Restablecer el TextView de nombre del empleado (si es un campo visual y no editable)
+        val employeeNameTextView = findViewById<TextView>(R.id.text_view_employee_name)
+        employeeNameTextView.text = ""  // O puedes poner un valor predeterminado como "Seleccione empleado"
+
+        // Restablecer el EditText de observación
+        val editTextRemarks = findViewById<EditText>(R.id.edit_remarks)
+        editTextRemarks.text.clear()  // Limpiar el texto ingresado en el campo de observación
+
+        // Si quieres restablecer algún valor de estado también, puedes hacerlo aquí
+        id_trabajador = 0
+        observacion=null
+
+    }
+
     private fun handleErrors(error: Throwable) {
         val errorMessage = error.message ?: "Error desconocido"
+        Log.d("errorMessage",errorMessage)
         mostrarSnackbar(this,errorMessage)
 
     }
     private fun setupAsistencia(){
-        // Observar el resultado de la asistencia
-        viewModelAsistencia.asistenciaResult.observe(this, Observer { result ->
-            result.onSuccess { response ->
-                // Aquí puedes manejar la respuesta exitosa
-                mostrarSnackbar(this,"Asistencia registrada exitosamente")
-
-            }.onFailure { error ->
-                handleErrors(error)
-            }
-        })
+        // Registrar el observador una sola vez, no dentro de cada llamada a saveAttendance
+        if (viewModelAsistencia.asistenciaResult.hasObservers().not()) {
+            viewModelAsistencia.asistenciaResult.observe(this, Observer { result ->
+                result.onSuccess { response ->
+                    Log.d("responseMessage", response.toString())
+                    // Aquí manejas la respuesta exitosa
+                    resetFields()
+                    mostrarSnackbar(this, "Asistencia registrada exitosamente")
+                }.onFailure { error ->
+                    handleErrors(error)
+                }
+            })
+        }
     }
     override fun onDestroy() {
         super.onDestroy()
@@ -406,7 +429,7 @@ class MainActivity: AppCompatActivity() {
             // Mostrar el nuevo Snackbar
             currentSnackbar?.show()
 
-        }, 100)  // Retraso de 100ms para asegurar que el anterior haya desaparecido
+        }, 300)  // Retraso de 100ms para asegurar que el anterior haya desaparecido
     }
 
 
