@@ -7,5 +7,8 @@ data class Asistencia(
     val id_turno: Int,
     val id_sede: Int,
     val tipo: String,
-    val observacion: String?
+    val observacion: String?,
+    val ip: String,
+    val latitud: String,
+    val longitud: String
 )

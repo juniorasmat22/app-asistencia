@@ -31,8 +31,10 @@ import com.academiaaiapaec.appasistenciaaiapaec.viewModel.EstadoViewModel
 import com.academiaaiapaec.appasistenciaaiapaec.viewModel.SedeViewModel
 import com.academiaaiapaec.appasistenciaaiapaec.viewModel.TrabajadorViewModel
 import com.academiaaiapaec.appasistenciaaiapaec.viewModel.TurnoViewModel
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.snackbar.Snackbar
 import com.google.zxing.integration.android.IntentIntegrator
+import java.net.NetworkInterface
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -323,23 +325,31 @@ class MainActivity: AppCompatActivity() {
         }
         // Mostrar un mensaje al usuario
         //Toast.makeText(this, "Asistencia registrada: $fechaAsistencia $horaAsistencia", Toast.LENGTH_SHORT).show()
-        val asistencia = Asistencia(
-           id_trabajador= id_trabajador,
-            fecha= fechaAsistencia.toString(),
-             hora= horaAsistencia.toString(),
-            id_turno= id_turno,
-             id_sede= id_sede,
-             tipo= estado,
-             observacion= observacion
-        )
-        // Llamar al método de registrar asistencia del ViewModel
-       viewModelAsistencia.registrarAsistencia(asistencia)
-        setupAsistencia()
-        // Log para verificar
-        Log.d("msg_AIAPAEC", asistencia.toString())
+        // Obtener IP, latitud y longitud
+        // Obtener IP y luego obtener la ubicación de forma asíncrona
+        val ip = getIPAddress()
+        getLastKnownLocation { (latitud, longitud) ->
+            val asistencia = Asistencia(
+                id_trabajador = id_trabajador,
+                fecha = fechaAsistencia.toString(),
+                hora = horaAsistencia.toString(),
+                id_turno = id_turno,
+                id_sede = id_sede,
+                tipo = estado,
+                observacion = observacion,
+                ip = ip,
+                latitud = latitud,
+                longitud = longitud
+            )
+
+            // Llamar al método de registrar asistencia del ViewModel
+            viewModelAsistencia.registrarAsistencia(asistencia)
+            setupAsistencia()
+
+            // Log para verificar
+            Log.d("msg_AIAPAEC", asistencia.toString())
+        }
         //Log.d("Asistencia Data", "trabajador: $id_trabajador, sede: $id_sede, turno: $id_turno, estado: $estado,observacio,$remarksText")
-
-
     }
     private fun resetFields() {
         // Restablecer el TextView de nombre del empleado (si es un campo visual y no editable)
@@ -429,8 +439,48 @@ class MainActivity: AppCompatActivity() {
             // Mostrar el nuevo Snackbar
             currentSnackbar?.show()
 
-        }, 300)  // Retraso de 100ms para asegurar que el anterior haya desaparecido
+        }, 100)  // Retraso de 100ms para asegurar que el anterior haya desaparecido
     }
 
+    fun getIPAddress(): String {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            for (intf in interfaces) {
+                val addresses = intf.inetAddresses
+                for (address in addresses) {
+                    if (!address.isLoopbackAddress) {
+                        val hostAddress = address.hostAddress
+                        // Excluir direcciones IPv6 si es necesario
+                        if (hostAddress.indexOf(':') < 0) {
+                            return hostAddress
+                        }
+                    }
+                }
+            }
+        } catch (ex: Exception) {
+            Log.e("IP_ADDRESS", ex.toString())
+        }
+        return "No disponible"
+    }
+
+    private fun getLastKnownLocation(callback: (Pair<String, String>) -> Unit) {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    val latitud = location.latitude.toString()
+                    val longitud = location.longitude.toString()
+                    callback(Pair(latitud, longitud)) // Devuelve la ubicación al callback
+                } else {
+                    callback(Pair("0.0", "0.0")) // Ubicación no disponible
+                }
+            }.addOnFailureListener {
+                callback(Pair("0.0", "0.0")) // Error al obtener la ubicación
+            }
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+            callback(Pair("0.0", "0.0")) // Error de permisos
+        }
+    }
 
 }
